@@ -41,7 +41,7 @@ pnpm-debug.log*
 *.tsbuildinfo
 
 # Codex
-.codex/
+/.codex/
 
 # git
-.git/
+/.git/
