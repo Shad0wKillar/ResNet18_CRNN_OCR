@@ -159,9 +159,6 @@ src/lib/ocr.ts
 src/lib/samples.ts
   Sample manifest and loader.
 
-scripts/keepalive/
-  Cron-driven pinger that keeps the Space from going to sleep.
-
 public/samples/*.png
   The six bundled handwriting samples.
 
@@ -230,16 +227,6 @@ formData.append("file", imageFile);
 ```
 
 The client also tolerates alternative shapes — `prediction`, `predicted_text`, `transcription`, `result`, string arrays, and nested objects are all searched before falling back to pretty-printed JSON.
-
-## Keeping the Space Awake
-
-Free Hugging Face Spaces sleep when idle, so the first request after a lull pays a container cold start. [`scripts/keepalive`](./scripts/keepalive) installs a cron-driven pinger that POSTs a random sample every 2-3 hours:
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/Shad0wKillar/ResNet18_CRNN_OCR/main/scripts/keepalive/install.sh | bash
-```
-
-It namespaces itself to a single tagged crontab line, so it coexists with keep-alive jobs for other projects. See the [keep-alive README](./scripts/keepalive/README.md) for scheduling details and uninstall steps.
 
 ## License
 
