@@ -13,6 +13,7 @@ import {
 import { Button } from "@/components/button";
 import { ImageDropzone } from "@/components/image-dropzone";
 import { OcrResultPanel } from "@/components/ocr-result-panel";
+import { SampleGallery } from "@/components/sample-gallery";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useOcrPrediction } from "@/hooks/use-ocr-prediction";
 
@@ -101,8 +102,8 @@ export default function Home() {
                     ResNet18-CRNN-OCR
                   </h1>
                   <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                    Upload an image and run recognition through your Hugging
-                    Face inference endpoint.
+                    Upload an image or pick one of the samples, then run
+                    recognition through your Hugging Face inference endpoint.
                   </p>
                 </div>
               </div>
@@ -156,6 +157,14 @@ export default function Home() {
               onFileSelect={handleFileSelect}
               selectedFile={file}
             />
+
+            <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
+              <SampleGallery
+                disabled={isLoading}
+                onSampleSelect={handleFileSelect}
+                selectedFileName={file?.name ?? null}
+              />
+            </div>
 
             <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
               <Button

@@ -45,3 +45,5 @@ pnpm-debug.log*
 
 # git
 /.git/
+
+junk/
