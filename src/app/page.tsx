@@ -1,64 +1,33 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import {
-  Cpu,
-  ImageUp,
-  Loader2,
-  RotateCcw,
-  ScanText,
-  Server,
-  Sparkles,
-} from "lucide-react";
-import { Button } from "@/components/button";
+import { useEffect, useRef } from "react";
+import { Cpu, ScanText, Server, Sparkles } from "lucide-react";
 import { ImageDropzone } from "@/components/image-dropzone";
 import { OcrResultPanel } from "@/components/ocr-result-panel";
 import { SampleGallery } from "@/components/sample-gallery";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useObjectUrl } from "@/hooks/use-object-url";
 import { useOcrPrediction } from "@/hooks/use-ocr-prediction";
 
+const CHIPS = [
+  { icon: Cpu, label: "ResNet18 encoder" },
+  { icon: ScanText, label: "CRNN decoder" },
+  { icon: Server, label: "Hugging Face Space" },
+];
+
 export default function Home() {
-  const {
-    file,
-    result,
-    isLoading,
-    error,
-    handleFileSelect,
-    resetPrediction,
-    submitImage,
-  } = useOcrPrediction();
-  const [showWarmupMessage, setShowWarmupMessage] = useState(false);
+  const { file, result, error, status, selectFile, rerun, cancelRun, reset } =
+    useOcrPrediction();
+  const previewUrl = useObjectUrl(file);
+  const resultRef = useRef<HTMLElement>(null);
 
+  // Stacked layouts put the output below the fold, so follow the run down.
   useEffect(() => {
-    if (!isLoading) return;
+    if (status !== "running") return;
+    if (window.matchMedia("(min-width: 1024px)").matches) return;
 
-    const timer = window.setTimeout(() => {
-      setShowWarmupMessage(true);
-    }, 5000);
-
-    return () => window.clearTimeout(timer);
-  }, [isLoading]);
-
-  const fileSummary = useMemo(() => {
-    if (!file) return "No image selected";
-    return `${file.type || "image"} - ${(file.size / 1024 / 1024).toFixed(
-      2,
-    )} MB`;
-  }, [file]);
-
-  const loadingMessage = showWarmupMessage
-    ? "The Hugging Face Space may be waking up. Keeping the request open..."
-    : "Running OCR inference...";
-
-  const runPrediction = () => {
-    setShowWarmupMessage(false);
-    void submitImage();
-  };
-
-  const resetAll = () => {
-    setShowWarmupMessage(false);
-    resetPrediction();
-  };
+    resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [status]);
 
   return (
     <main className="min-h-screen bg-[var(--app-bg)] text-zinc-950 transition-colors dark:text-zinc-50">
@@ -73,7 +42,7 @@ export default function Home() {
                 ResNet18-CRNN-OCR
               </p>
               <p className="truncate text-xs text-zinc-500 dark:text-zinc-400">
-                OCR inference console
+                Handwriting recognition demo
               </p>
             </div>
           </div>
@@ -88,118 +57,80 @@ export default function Home() {
         </div>
       </header>
 
-      <div className="mx-auto grid max-w-6xl gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[0.92fr_1.08fr] lg:px-8">
-        <section className="space-y-5">
-          <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/90">
-            <div className="flex items-start justify-between gap-4">
-              <div className="space-y-3">
-                <div className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
-                  <Sparkles className="h-3.5 w-3.5" />
-                  Live OCR
-                </div>
-                <div>
-                  <h1 className="max-w-xl text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-4xl">
-                    ResNet18-CRNN-OCR
-                  </h1>
-                  <p className="mt-3 max-w-xl text-sm leading-6 text-zinc-600 dark:text-zinc-300">
-                    Upload an image or pick one of the samples, then run
-                    recognition through your Hugging Face inference endpoint.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 transition-colors dark:border-zinc-800 dark:bg-zinc-950/70">
-                <Cpu className="h-4 w-4 text-teal-700 dark:text-teal-300" />
-                <p className="mt-2 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                  ResNet18
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Encoder
-                </p>
-              </div>
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 transition-colors dark:border-zinc-800 dark:bg-zinc-950/70">
-                <ScanText className="h-4 w-4 text-amber-700 dark:text-amber-300" />
-                <p className="mt-2 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                  CRNN
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Sequence decoder
-                </p>
-              </div>
-              <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-3 transition-colors dark:border-zinc-800 dark:bg-zinc-950/70">
-                <Server className="h-4 w-4 text-rose-700 dark:text-rose-300" />
-                <p className="mt-2 text-sm font-semibold text-zinc-950 dark:text-zinc-50">
-                  Space
-                </p>
-                <p className="text-xs text-zinc-500 dark:text-zinc-400">
-                  Remote inference
-                </p>
-              </div>
-            </div>
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mb-6 max-w-2xl">
+          <div className="inline-flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-800 dark:border-amber-400/30 dark:bg-amber-400/10 dark:text-amber-200">
+            <Sparkles className="h-3.5 w-3.5" />
+            Live OCR
           </div>
+          <h1 className="mt-3 text-3xl font-semibold tracking-tight text-zinc-950 dark:text-zinc-50 sm:text-4xl">
+            Read handwriting in one click
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-zinc-600 dark:text-zinc-300">
+            Pick a sample line or drop in your own image. Recognition starts the
+            moment you choose one.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {CHIPS.map(({ icon: Icon, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200 bg-white px-2.5 py-1 text-xs font-medium text-zinc-600 transition-colors dark:border-zinc-800 dark:bg-zinc-900/90 dark:text-zinc-300"
+              >
+                <Icon className="h-3.5 w-3.5 text-teal-700 dark:text-teal-300" />
+                {label}
+              </span>
+            ))}
+          </div>
+        </div>
 
-          <div className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/90">
-            <div className="mb-4 flex items-center justify-between gap-3">
+        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <section className="rounded-lg border border-zinc-200 bg-white p-5 shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/90">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-950 text-sm font-semibold text-white dark:bg-zinc-100 dark:text-zinc-950">
+                1
+              </span>
               <div>
                 <h2 className="text-base font-semibold text-zinc-950 dark:text-zinc-50">
-                  Input image
+                  Choose an image
                 </h2>
                 <p className="text-sm text-zinc-500 dark:text-zinc-400">
-                  {fileSummary}
+                  Click a sample to run it instantly
                 </p>
               </div>
-              <ImageUp className="h-5 w-5 text-zinc-400 dark:text-zinc-500" />
             </div>
 
-            <ImageDropzone
-              onFileSelect={handleFileSelect}
-              selectedFile={file}
+            <SampleGallery
+              onSampleSelect={selectFile}
+              selectedFileName={file?.name ?? null}
             />
 
-            <div className="mt-5 border-t border-zinc-200 pt-5 dark:border-zinc-800">
-              <SampleGallery
-                disabled={isLoading}
-                onSampleSelect={handleFileSelect}
-                selectedFileName={file?.name ?? null}
-              />
+            <div className="my-4 flex items-center gap-3">
+              <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
+              <span className="text-xs font-medium uppercase tracking-wide text-zinc-400 dark:text-zinc-500">
+                or
+              </span>
+              <span className="h-px flex-1 bg-zinc-200 dark:bg-zinc-800" />
             </div>
 
-            <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-[1fr_auto]">
-              <Button
-                className="w-full"
-                disabled={!file || isLoading}
-                onClick={runPrediction}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <ScanText className="h-4 w-4" />
-                )}
-                {isLoading ? "Recognizing..." : "Recognize text"}
-              </Button>
+            <ImageDropzone onFileSelect={selectFile} />
+          </section>
 
-              <Button
-                disabled={!file && !result && !error}
-                onClick={resetAll}
-                variant="secondary"
-              >
-                <RotateCcw className="h-4 w-4" />
-                Reset
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <section className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition-colors dark:border-zinc-800 dark:bg-zinc-900/90">
-          <OcrResultPanel
-            error={error}
-            isLoading={isLoading}
-            loadingMessage={loadingMessage}
-            result={result}
-          />
-        </section>
+          <section
+            ref={resultRef}
+            className="overflow-hidden rounded-lg border border-zinc-200 bg-white shadow-sm transition-colors lg:sticky lg:top-6 dark:border-zinc-800 dark:bg-zinc-900/90"
+          >
+            <OcrResultPanel
+              error={error}
+              fileName={file?.name ?? null}
+              onCancel={cancelRun}
+              onClear={reset}
+              onRerun={rerun}
+              previewUrl={previewUrl}
+              result={result}
+              status={status}
+            />
+          </section>
+        </div>
       </div>
     </main>
   );
